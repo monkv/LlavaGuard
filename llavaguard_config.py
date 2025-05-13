@@ -297,7 +297,8 @@ llava_guard_config = {
 
 local_data_dir = f'/common-repos/LlavaGuard'
 if not os.path.exists(local_data_dir):
-    local_data_dir = '/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/lhelff/ds/LlavaGuard'
+    #local_data_dir = '/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/lhelff/ds/LlavaGuard'
+    local_data_dir = '/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/am84fuxo'
 if not os.path.exists(local_data_dir):
     raise ValueError(f'could not find local data dir. Please correct path {local_data_dir}')
 

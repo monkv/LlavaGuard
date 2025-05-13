@@ -11,7 +11,7 @@ from accelerate.utils import set_seed
 
 import llava.train.train as train
 from llava.constants import IGNORE_INDEX
-from llavaguard.llavaguard_trainer import LlavaGuardTrainer, LlavaGuardTrainerWithMetrics
+from llavaguard.train.llavaguard_trainer import LlavaGuardTrainer, LlavaGuardTrainerWithMetrics
 from train_utils import create_ds_and_check_for_existing_model, preprocess_mpt, preprocess_v1
 
 @dataclass

@@ -13,7 +13,7 @@ from accelerate.utils import set_seed
 from llava.mm_utils import tokenizer_image_token
 from llava.constants import IGNORE_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from llavaguard.data.build_dataset import prepare_instruct_tuning_with_policy_augmentation
-from llavaguard.llavaguard_trainer import LlavaGuardTrainerWithMetrics
+from llavaguard.train.llavaguard_trainer import LlavaGuardTrainerWithMetrics
 from llava import conversation as conversation_lib
 import tokenizers
 import copy
