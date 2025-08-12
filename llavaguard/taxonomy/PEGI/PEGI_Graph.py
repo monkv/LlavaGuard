@@ -340,15 +340,15 @@ def get_policy_intro(policy_name: str = "Safety Policy"):
 
 def get_policy_assessment(categories: list):
     return f'''Assessment Steps:
-1. Determine the overall safety "rating" of the content. If the content falls into any prohibited category of the policy, mark it as "Unsafe". Otherwise, mark it as "Safe".
-2. Identify all relevant content "categories" within the policy, regardless of whether they are decleared as permitted or prohibited. If no categories apply, select 'NA: None applicable'.
-3. Provide a "Rationale". Justify why the content is considered safe or unsafe by describing the content and citing any violations of prohibited categories. If there are no violations, provide a brief explanation of why the content is safe.
+1. Identify all relevant content "categories" within the policy, regardless of whether they are decleared as permitted or prohibited. If no categories apply, select 'NA: None applicable'.
+2. Provide a "Rationale". Justify why the content is violating these categories by describing the content and citing any violations of prohibited categories. If there are no violations, provide a brief explanation of why the content is safe.
+3. Determine the overall PEGI rating of the content that is related to the violated category. If the content falls into more than one category, chose the highest PEGI score.
 
 To provide your assessment use the following json template:
 {{
-    "rating": str<"Unsafe"|"Safe">,
-    "categories": str<"{'"|"'.join(categories)}">,
     "rationale": str,
+    "categories": str<"{'"|"'.join(categories)}">,
+    "PEGI-rating": str<"PEGI 18"|"PEGI 16"|"PEGI 12"|"PEGI 7"|"PEGI 3">,
 }}
 <image>
 '''
@@ -369,6 +369,7 @@ def remove_mutually_exclusive_categories(categories: list):
     disturbing = ['Scary Content', 'Moderately Disturbing Content', 'Highly Disturbing Content']
     self_harm = ['Non-realistic Self-harm', 'Self-injury', 'Suicide']
     categories_to_be_removed = []
+    #check from most severe to least severe
     for exclusive_list in [violence, hate, nudity, disturbing, self_harm]:
         for c_id in range(len(exclusive_list) - 1, -1, -1):
             if exclusive_list[c_id] in categories:
@@ -378,11 +379,8 @@ def remove_mutually_exclusive_categories(categories: list):
     return cleaned_list
 
 
-
-  
 def remove_mutually_exclusive_categories_df(df: pd.DataFrame):
     '''
-
     '''
     categories = get_content_categories(policy_graph)
     if len(df.columns) != len(categories):
@@ -455,7 +453,7 @@ def policy_graph_to_safety_policy(pegi_score: int, policy_graph:dict = policy_gr
         allowed_content = "Permitted content categories:\n"
         prohibited_content = "Prohibited content categories:\n"
         for subcategory, graph_info in category_details.items():
-            subcategory_pegi_score = graph_info["rating"].split(' ')[-1]
+            subcategory_pegi_score = graph_info["rating"].split(' ')[-1] #here check the age
             subcategory_with_number = f'{subcategory_count}. {subcategory}'
             if subcategory_pegi_score == "Illegal" or pegi_score < int(subcategory_pegi_score):
                 prohibited_content += f'- "{subcategory_with_number}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
@@ -472,9 +470,7 @@ def policy_graph_to_safety_policy(pegi_score: int, policy_graph:dict = policy_gr
     policy_text += get_policy_assessment(subcategories)
     return policy_text
 
-# print(policy_graph_to_text(12))
-
-
+#something wrong with this function
 def policy_graph_to_safety_policy_v2(policy_graph:dict = policy_graph):
     
     subcategories = []
@@ -482,6 +478,7 @@ def policy_graph_to_safety_policy_v2(policy_graph:dict = policy_graph):
     policy_text = ''
     subcategory_count = 0
     for category, category_details in policy_graph.items():
+        content = ''
         policy_text += category + '\n'
         for subcategory, graph_info in category_details.items():
             subcategory_count += 1
@@ -547,3 +544,29 @@ def get_majority_vote_from_df(violations: pd.DataFrame):
             data += [0]
     df = pd.DataFrame(columns=categories, data=[data], index=[0])
     return df
+
+def get_rating(subcategory_name: str, policy_graph: dict = policy_graph) -> int:
+    """
+    Return the numeric PEGI rating for a given subcategory.
+    
+    Parameters:
+        subcategory_name (str): The name of the content subcategory.
+        policy_graph (dict): The policy graph to search through (default is the global policy_graph).
+        
+    Returns:
+        int: The PEGI rating as an integer (e.g., 3, 7, 12, 16, 18), or -1 for "Illegal", or None if not found.
+    """
+    for category_details in policy_graph.values():
+        for subcategory, graph_info in category_details.items():
+            if subcategory == subcategory_name:
+                rating_str = graph_info["rating"]
+                if rating_str == "Illegal":
+                    return -1
+                try:
+                    rating = int(rating_str.split()[-1])
+                    #print(f'Rating = {rating}')
+                    return rating
+                except ValueError:
+                    return None 
+    return None  
+

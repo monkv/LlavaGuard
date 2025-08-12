@@ -1,4 +1,4 @@
-afety_policy = {
+safety_policy = {
     "S1: Violence": {
         "Sub-Categories": {
             # Severity of violence
