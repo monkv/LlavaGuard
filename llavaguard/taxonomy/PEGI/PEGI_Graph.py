@@ -4,26 +4,26 @@ import pandas as pd
 
 policy_graph = {
     "S1: Violence": {
-        "Educational Content": { # violent but educational...
+        "1. Educational Content": { # violent but educational...
             "edge": "e.g.",
             "examples": ["Charts on violence statistics, and trends", "Informational content on prevalence, causes, and effects of violence", "Legal education", "Memorials and statues of historical figures linked to violence"],
             "rating": "PEGI 3",
             "PEGI tags": []
         },
         # Severity of violence
-        "Unrealistic and Implied Violence": {
+        "2. Unrealistic and Implied Violence": {
             "edge": "e.g.",
             "examples": ["Non-realistic violence", "Non-detailed violence"],
             "rating": "PEGI 7",
             "PEGI tags": ["Violence"]
         },
-        "Military and Warfare": { # maybe Military and warefare is redundant
+        "3. Military and Warfare": { # maybe Military and warefare is redundant
             "edge": "e.g.",
             "examples": ["Military", "Warfare", "Soldiers", "Combat", "Battle"],
             "rating": "PEGI 12",
             "PEGI tags": ["Violence"]
         },
-        "Mild Violence": {
+        "4. Mild Violence": {
             "edge": "e.g.",
             "examples": [
                 "Violence without any indication of suffering",
@@ -34,13 +34,13 @@ policy_graph = {
             "rating": "PEGI 12",
             "PEGI tags": ["Violence"]
         },
-        "Violent Acts (animals)": {
+        "5. Violent Acts (animals)": {
             "edge": "e.g.",
             "examples": ["Violence towards animals", "Animal kingdom violence", "Suffering or dead animals", "Caged or suffering animals"],
             "rating": "PEGI 12",
             "PEGI tags": ["Violence"]
         },
-        "Realistic Violence": {
+        "6. Realistic Violence": {
             "edge": "e.g.",
             "examples": [
                 "Violence against human characters with sight of blood and injuries",
@@ -50,7 +50,7 @@ policy_graph = {
             "PEGI tags": ["Violence"]
         },
         # Type of violence
-        "Violent Acts (humans)": {
+        "7. Violent Acts (humans)": {
             "edge": "e.g.",
             "examples": ["Violence towards human characters", "Bodily destruction", "Murder", "Torture/Abuse"],
             "rating": "PEGI 16",
@@ -62,13 +62,13 @@ policy_graph = {
         #     "rating": "PEGI 16",
         #     "PEGI tags": ["Violence"]
         # },
-        "Weapon Usage": {
+        "8. Weapon Usage": {
             "edge": "e.g.",
             "examples": ["Guns in action", "Explosive devices being detonated", "Bioweapons in use", "Nuclear weapons being launched", "Chemical weapons actively released"],
             "rating": "PEGI 16",
             "PEGI tags": ["Violence"]
         },
-        "Gross Violence": {
+        "9. Gross Violence": {
             "edge": "e.g.",
             "examples": [ "Detailed scenes of excessive gore", "Motiveless or gratuitous violence", "Violence against defenseless individuals", "Torture of humans"],
             "rating": "PEGI 18",
@@ -76,19 +76,19 @@ policy_graph = {
         },
     },
     "S2: Hate": {
-        "Educational Content": {
+        "10. Educational Content": {
             "edge": "e.g.",
             "examples": ["Charts on hate statistics, and trends", "Informational content on prevalence, causes, and effects of hate speech and discrimination", "Legal education", "Protests against hate speech and discrimination"],
             "rating": "PEGI 3",
             "PEGI tags": []
         },
-        "Mild Swearing": {
+        "11. Mild Swearing": {
             "edge": "e.g.",
             "examples": ["Mild insults"],
             "rating": "PEGI 12",
             "PEGI tags": ["Bad Language"]
         },
-        "Offensive Language": {
+        "12. Offensive Language": {
             "edge": "e.g.",
             "examples": [
                 "Vulgarity", 
@@ -99,7 +99,7 @@ policy_graph = {
             "rating": "PEGI 16",
             "PEGI tags": ["Bad Language"]
         },
-        "Harassment": {
+        "13. Harassment": {
             "edge": "e.g.",
             "examples": [
                 "Bullying", "Threats", "Intimidation", "Shaming", "Humiliation",
@@ -108,7 +108,7 @@ policy_graph = {
             "rating": "PEGI 16",
             "PEGI tags": ["Bad Language"]
         },
-        "Discrimination": {
+        "14. Discrimination": {
             "edge": "e.g. against",
             "examples": [
                 "Race", "Color", "Ethnicity", "National Origin", "Disability",
@@ -121,37 +121,37 @@ policy_graph = {
 
     },
     "S3: Nude Content": {
-        "Educational Content": {
+        "15. Educational Content": {
             "edge": "e.g.",
             "examples": ["Charts on statistics, and trends", "Artistic nudity", "Sex education materials"],
             "rating": "PEGI 12",
             "PEGI tags": []
         },
-        "Sexual Innuendo": {
+        "16. Sexual Innuendo": {
             "edge": "e.g.",
             "examples": ["Suggestive posing and dancing", "Sexual humor"],
             "rating": "PEGI 12",
             "PEGI tags": ["Sex"]
         },
-        "Mild Nudity Content": {
+        "17. Mild Nudity Content": {
             "edge": "i.e.",
             "examples": ["Sexual intercourse without exposed genitals or breasts", "Erotic nudity without visible genitalia or exposed breasts", "Characters in revealing clothing such as lingerie or undergarments", "Romantic Scenes with kissing"],
             "rating": "PEGI 16",
             "PEGI tags": ["Sex"]
         },
-        "Explicit Sexual Content": {
+        "18. Explicit Sexual Content": {
             "edge": "i.e.",
             "examples": ["Obscenity", "Sexual intercourse with visible genitalia or exposed breasts"],
             "rating": "PEGI 18",
             "PEGI tags": ["Sex"]
         },
-        "Explicit Nudity Content": {
+        "19. Explicit Nudity Content": {
             "edge": "i.e.",
             "examples": ["Nudity with visible genitalia", "Nudity with exposed breasts"],
             "rating": "PEGI 18",
             "PEGI tags": ["Sex"]
         },
-        "Monetized Nudity": {
+        "20. Monetized Nudity": {
             "edge": "e.g.",
             "examples": ["Pornography", "Promotion of sexual services", "Prostitution"],
             "rating": "PEGI 18",
@@ -159,31 +159,31 @@ policy_graph = {
         }
     },
     "S4: Disturbing Content": {
-        "Scary Content": {
+        "21. Scary Content": {
             "edge": "e.g.",
             "examples": ["Frightening Content", "Scary Situations", "Disasters and Emergencies"],
             "rating": "PEGI 7",
             "PEGI tags": ["Fear"]
         },
-        "Moderately Disturbing Content": {
+        "22. Moderately Disturbing Content": {
             "edge": "e.g.",
             "examples": [ "Mild gore", "Monsters and Zombies", "Jump scares", "Moderate horror sequences", "Characters in danger", "Detailed injury", "Death"],
             "rating": "PEGI 12",
             "PEGI tags": ["Fear"]
         },
-        "Non-realistic Weapons": {
+        "23. Non-realistic Weapons": {
             "edge": "e.g.",
             "examples": ["Fantasy weapons", "Cartoonish or fictional weapons", "Non-detailed weapons"],
             "rating": "PEGI 12",
             "PEGI tags": []
         },
-        "Highly Disturbing Content": {
+        "24. Highly Disturbing Content": {
             "edge": "e.g.",
             "examples": ["Intense horror sequences", "Strong gore or suffering", "Scenes of extreme emotional distress"],
             "rating": "PEGI 16",
             "PEGI tags": ["Fear"]
         },
-        "Weapon Depictions": {
+        "25. Weapon Depictions": {
             "edge": "e.g.",
             "examples": ["Licensed weapons", "Non-licensed weapons", "Guns", "Explosives", "Bioweapons", "Nuclear weapons", "Chemical weapons", "Other weapons"],
             "rating": "PEGI 16",
@@ -191,25 +191,25 @@ policy_graph = {
         },
     },
     "S5: Self-Harm": {
-        "Educational Content": {
+        "26. Educational Content": {
             "edge": "e.g.",
             "examples": ["Charts on statistics, and trends", "Educational content on self-harm and suicide prevalence, causes, and effects"],
             "rating": "PEGI 3",
             "PEGI tags": []
         },
-        "Non-realistic Self-harm": {
+        "27. Non-realistic Self-harm": {
             "edge": "e.g.",
             "examples": ["Self-harm in cartoons"],
             "rating": "PEGI 16",
             "PEGI tags": []
         },
-        "Suicide": {
+        "28. Suicide": {
             "edge": "e.g.",
             "examples": ["Suicide depiction"],
             "rating": "PEGI 18",
             "PEGI tags": []
         },
-        "Self-injury": {
+        "29. Self-injury": {
             "edge": "e.g.",
             "examples": ["Cutting", "Disordered Eating"],
             "rating": "PEGI 18",
@@ -217,49 +217,49 @@ policy_graph = {
         },
     },
     "S6: Criminal Activities": {
-        "Educational Content": {
+        "30. Educational Content": {
             "edge": "e.g.",
             "examples": ["Charts on statistics, and trends", "Crime prevention strategies", "Legal education"],
             "rating": "PEGI 3",
             "PEGI tags": []
         },
-        "Property Crimes": {
+        "31. Property Crimes": {
             "edge": "e.g.",
             "examples": ["Burglary", "Arson", "Vandalism"],
             "rating": "PEGI 16",
             "PEGI tags": []
         },
-        "Cyber Crimes": {
+        "32. Cyber Crimes": {
             "edge": "e.g.",
             "examples": ["Hacking", "Spyware"],
             "rating": "PEGI 16",
             "PEGI tags": []
         },
-        "Deception": {
+        "33. Deception": {
             "edge": "e.g.",
             "examples": ["Fraud", "Scams"],
             "rating": "PEGI 16",
             "PEGI tags": []
         },
-        "Supporting Malicious Groups": {
+        "34. Supporting Malicious Groups": {
             "edge": "e.g.",
             "examples": ["Terrorism", "Extremism", "Criminal organization"],
             "rating": "PEGI 18",
             "PEGI tags": []
         },
-        "Sex Crimes": {
+        "35. Sex Crimes": {
             "edge": "e.g.",
             "examples": ["Sexual assault", "Sexual harassment", "Rape", "Groping", "Human trafficking"],
             "rating": "PEGI 18",
             "PEGI tags": []
         },
-        "Financial Crimes": {
+        "36. Financial Crimes": {
             "edge": "e.g.",
             "examples": ["Money laundering"],
             "rating": "PEGI 18",
             "PEGI tags": []
         },
-        "Weapons Crimes": {
+        "37. Weapons Crimes": {
             "edge": "e.g.",
             "examples": ["Producing unlicensed firearms"],
             "rating": "PEGI 18",
@@ -267,38 +267,38 @@ policy_graph = {
         },
     },
     "S7: Regulated Substances": {
-        "Educational Content": {
+        "38. Educational Content": {
             "edge": "e.g.",
             "examples": ["Charts on statistics, and trends", "Educational content that informs about drug use and prevention"],
             "rating": "PEGI 3",
             "PEGI tags": []
         },
-        "Medication": {
+        "39. Medication": {
             "edge": "i.e.",
             "examples": ["Legal drug use"],
             "rating": "PEGI 3",
             "PEGI tags": []
         },
-        "Alcohol": {
+        "40. Alcohol": {
             "edge": "e.g.",
             "examples": ["Alcohol consumption", "Alcoholic beverages"],
             "rating": "PEGI 16",
             "PEGI tags": ["Drugs"]
         },
-        "Tobacco": {
+        "41. Tobacco": {
             "edge": "e.g.",
             "examples": ["Tobacco consumption", "Tobacco products"],
             "rating": "PEGI 16",
             "PEGI tags": ["Drugs"]
         },        
-        "Cannabis and Other Drugs": {
+        "42. Cannabis and Other Drugs": {
             "edge": "e.g.",
             "examples": ["Cannabis", "Other illegal drugs"],
             "rating": "PEGI 16",
             "PEGI tags": ["Drugs"]
         },
     # "Glamorization of Illegal Drugs": {
-        "Glamorization of Drug Use": {
+        "43. Glamorization of Drug Use": {
             "edge": "e.g.",
             "examples": ["Portraying drug use as exciting, glamorous, or beneficial", "Linking drug use to success or happiness", "Promoting drug use in a positive or appealing manner"],
             "rating": "PEGI 18",
@@ -306,13 +306,13 @@ policy_graph = {
         },
     },
     "S8: Economic Harm": {
-        "Educational Content": {
+        "44. Educational Content": {
             "edge": "e.g.",
             "examples": ["Charts on statistics, and trends", "Information on financial risks and products", "Responsible gambling education", "Informational content on debt management"],
             "rating": "PEGI 3",
             "PEGI tags": []
     },
-        "High-Risk Financial Activities": {
+        "45. High-Risk Financial Activities": {
             "edge": "e.g.",
             "examples": ["Gambling", "Payday lending"],
             "rating": "PEGI 18",
@@ -320,13 +320,13 @@ policy_graph = {
         }
     },
     "S9: Child Exploitation": {
-        "Child Endangerment": {
+        "46. Child Endangerment": {
             "edge": "e.g.",
             "examples": ["Grooming", "Exploiting minors"],
             "rating": "Illegal",
             "PEGI tags": []
         },
-        "Child Sexual Abuse": {
+        "47. Child Sexual Abuse": {
             "edge": "e.g.",
             "examples": ["Solicitation", "CSAM"],
             "rating": "Illegal",
@@ -443,6 +443,34 @@ def remove_mutually_exclusive_categories_df(df: pd.DataFrame):
 
 
 def policy_graph_to_safety_policy(pegi_score: int, policy_graph:dict = policy_graph):
+    categories = list(policy_graph.keys())
+    subcategories = []
+    intro = get_policy_intro()
+    policy_text = intro + '\n'
+    subcategory_count = 1
+    for category, category_details in policy_graph.items():
+        policy_text += category + '\n'
+        allowed_content = "Permitted content categories:\n"
+        prohibited_content = "Prohibited content categories:\n"
+        for subcategory, graph_info in category_details.items():
+            subcategory_pegi_score = graph_info["rating"].split(' ')[-1] #here check the age
+            subcategory_with_number = f'{subcategory_count}. {subcategory}'
+            if subcategory_pegi_score == "Illegal" or pegi_score < int(subcategory_pegi_score):
+                prohibited_content += f'- "{subcategory_with_number}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
+            else:
+                allowed_content += f'- "{subcategory_with_number}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
+            subcategory_count += 1
+            subcategories.append(subcategory_with_number)
+        if allowed_content == "Permitted content categories:\n":
+            allowed_content += "None\n"
+        if prohibited_content == "Prohibited content categories:\n":
+            prohibited_content += "None\n"
+        policy_text +=  allowed_content + prohibited_content + '\n'
+
+    policy_text += get_policy_assessment(subcategories)
+    return policy_text
+
+def policy_graph_to_safety_policy(policy_graph:dict = policy_graph):
     categories = list(policy_graph.keys())
     subcategories = []
     intro = get_policy_intro()
