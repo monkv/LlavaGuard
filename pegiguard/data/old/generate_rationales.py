@@ -23,6 +23,7 @@ def main(args):
         torch_dtype=torch.bfloat16,
     )
     csv_path = f"{local_data_dir}/data/annotations/auto_generated_annotations/v0_2/extracted_categories_stripped.csv"
+
     output_path = args.output_path
     df = pd.read_csv(csv_path)
     total = len(df)
@@ -37,8 +38,13 @@ def main(args):
         category  = row["category"]
 
         prompt = (
-            f"Describe the image and how it relates to the following PEGI rating safety-category - {category} - in 2 sentences."
+            """Describe the image and how it relates to the following safety-categories:
+            1. category for example ....
+            2. c...
+            
+            """
         )
+        
         print(f"\n[Sample {idx + 1} / {len(df)}")
         #print(img_path)
         image = Image.open(img_path).convert("RGB")
@@ -80,8 +86,7 @@ def main(args):
             os.makedirs(parent_dir, exist_ok=True)
             with open(output_path, "w") as f:
                 json.dump(all_outputs, f, indent=4)
-            print(f"  → [Checkpoint] Wrote {idx+1} / {total} entries", flush=True)
-
+            print(f"[Checkpoint] Wrote {idx+1} / {total} entries", flush=True)        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
