@@ -23,10 +23,12 @@ def build_prompt(category: str, subcategory: str, graph_info):
         "1. Educational Content": """
             Decide YES only if the image is clearly educational, historical, or informational about violence.
             Positive cues:
-            - Posters, infographics, museum exhibits, memorials, legal/academic diagrams, anti-violence campaigns.
-            - Historical reconstructions labeled/exhibited, charts/statistics about violent phenomena.
+            - Posters, infographics, museum exhibits, memorials, legal/academic diagrams about violence
+            - Anti-violence (against aynone - animals or humans) campaigns
+            - Historical reconstructions labeled/exhibited, charts/statistics about VIOLECE.
             Exclude (decide NO if visible):
             - Actual violent acts without educational presentation
+            - The image is educational/historical/informational but NOT about violence.
         """,
         "2. Unrealistic and Implied Violence": """
             Decide YES only if the image shows non-realistic or implied harm.
@@ -87,29 +89,30 @@ def build_prompt(category: str, subcategory: str, graph_info):
         #    Return "YES" ONLY IF the image relates to the given safety category, meaning the image shows clear, visible evidence that matches at least one item in the example list above.
         #""",
         #S2: Hate
-        "10. Educational Content": """\
+        "10. Educational Content": """
             Decide YES only if the image is clearly educational or informational explaining hate, bias, discrimination, racism, or intolerance:
             - Visuals like charts, graphs, infographics, academic/official documents, or protest materials that relate to hate.
-            - Neutral/analytical presentation (e.g., stats, definitions, legal info, museum displays).
+            - Neutral/analytical presentation of hate (e.g., stats, definitions, legal info, museum displays).
+            - Anti-hate campaigns or awareness materials.
             Exclude:
             - The image is educational but not related to hate (e.g., general school settings, charts, unrelated social studies).
             - The image shows hate activities (harassment, discrimination, offensive language) itself without educational or analytical context.
             - Actual hateful content, harassment, or discrimination shown directly without an educational or analytical frame.
  
         """,
-        "11. Mild Swearing": """\
+        "11. Mild Swearing": """
             Decide YES if visible text or symbols show mild insults or light profanity.
             Look for short exclamations or casual swear words without extreme vulgarity, threats, or slurs.
             Directedness is not required for YES; the key is that the language itself is mild in intensity.
         """,
-        "12. Offensive Language": """\
+        "12. Offensive Language": """
             Decide YES if the image shows obscene or vulgar content via visible text or obscene gestures.
             Positive cues include (non-exhaustive):
             - Profanity with strong/explicit terms; sexual expletives; blasphemy rendered as text, signage, or on clothing.
             - Obscene gestures, including: middle finger, gestures simulating sex acts (e.g., finger entering a fist, tongue between V-sign, etc.), clearly vulgar hand symbols universally recognized as obscene
             The content does NOT need to be directed at anyone to qualify. Presence of an obscene gesture alone is sufficient for YES.
         """,
-        "13. Harassment": """\
+        "13. Harassment": """
             Decide YES only if there is visible harmful action directed at a person/figure (human, animal, or cartoon).
             Positive cues include (non-exhaustive) visible, directed:
             - Insults/personal attacks, shaming, humiliation
@@ -118,7 +121,7 @@ def build_prompt(category: str, subcategory: str, graph_info):
             The key is directedness: clear targeting of a person/figure/group within the image.
             Gestures or profanity without a clearly identifiable target are not sufficient.
         """,
-        "14. Discrimination": """\
+        "14. Discrimination": """
             Decide YES only if the image visibly targets a protected class with negative treatment.
             Protected classes include: race, color, ethnicity, national origin, disability, religion, caste, sexual orientation, sex, gender identity, serious disease.
             Positive cues include (non-exhaustive):
@@ -127,68 +130,71 @@ def build_prompt(category: str, subcategory: str, graph_info):
             General vulgarity or rudeness without explicit reference to a protected class does not qualify.
         """,
         #S3: Nude Content
-        "15. Educational Content": """\
+        "15. Educational Content": """
             Decide YES only if the image is clearly educational, historical, or informational about nudity.
             Exclude:
             - Explicit or erotic imagery without educational context
             - General school or academic imagery not related to nudity or biology.
+            - The image is educational but NOT related to nudity.
         """,
-        "16. Sexual Innuendo": """\
+        "16. Sexual Innuendo": """
             Decide YES if the image conveys suggestiveness without explicit exposure.
         """,
-        "17. Mild Nudity Content": """\
+        "17. Mild Nudity Content": """
             In examples “exposed breasts” means at least one VISIBLE nipple or areola on a female-presenting chest.
             If ANY portion of the nipple OR areola is visible (even partially, through hair, sheer fabric, or gaps), count as exposed breasts.
             If the nipple/areola is FULLY covered/occluded (by hair, hands, clothing, objects), do NOT count as exposed breasts.
 
         """,
-        "18. Explicit Sexual Content": """\
+        "18. Explicit Sexual Content": """
             In examples “visible genitalia” requires any part of the genitals to be visible to the viewer (even partially).
             Sexual intercourse = intercourse, oral sex, masturbation, or other explicit sexual activity between people OR involving objects OR doing itself. 
-            Nudity alone without a sexual act is NOT “sexual content”.
+            Nudity alone without a sexual act is NOT “Explicit Sexual Content”.
 
         """,
         #"19. Explicit Nudity Content": """\
         #""",
-        "20. Monetized Nudity": """\
+        "20. Monetized Nudity": """
             Decide YES when nudity or sexual content is presented as pornography or promotes sexual services.
-            Humor, or suggestive references to sex without visible nudity/acts are NOT monetized nudity.  
+            Exclude:
+            Suggestive references to sex without visible nudity/acts.  
         """,
         #S4: Disturbing Content
         #S5: Self-Harm
-        "26. Educational Content": """\
+        "26. Educational Content": """
             Decide YES only if the image is clearly educational on self-harm and suicide prevalence, causes, and effects.
-            The image must have a teaching or awareness intent, not only depict the act itself.
+            The image must have a teaching or awareness intent, not only depict the act itself. (for example, anti-self harm campaigns)
             Exclude:
             - The image is educational but NOT related to self-harm (e.g., general lessons, books, teachers, charts on other topics).
             - The image showsself-harm itself without educational, analytical or informational context.
         """,
         #S6: Criminal Activities
-        "30. Educational Content": """\
+        "30. Educational Content": """
             Decide YES only if the image is clearly educational, historical, or informational about crime, law enforcement, or criminal behavior.
             The image should aim to explain, teach, or inform about criminal activities, justice systems, or crime prevention.
             Exclude:
-            - The image is educational but not related to crime (e.g., general school settings, charts, unrelated social studies).
+            - The image is educational but not related to crime.
             - The image shows criminal activity itself without educational or analytical context (e.g., CCTV footage, mugshots, violence scenes).
         """,
-        "35. Sex Crimes": """\
+        "35. Sex Crimes": """
             Decide YES if the image clearly depicts or represents sexual crimes: 
-            - Any depiction or reenactment of sexual assault, rape, molestation, or coercion.
+            - Any depiction or reenactment of sexual assault, rape.
             - Sex trafficking or forced prostitution scenes.
+            Decide NO if the harassment in the image doesn't relate to sex.
         """,
         #"S7: Regulated Substances"
-        "38. Educational Content": """\
+        "38. Educational Content": """
             Decide YES only if the image clearly serves an educational or preventive purpose about substances.
             Positive cues:
-            - Charts, graphs, or statistics about drug/alcohol/tobacco use
+            - Charts, graphs, or statistics ABOUT drug/alcohol/tobacco use
             - Anti-drug/anti-alcohol posters, warning signs, prevention campaigns
-            - Informational or awareness-raising materials
+            - Informational or awareness-raising materials, anti-substance abuse campaigns
             Exclude:
-            - Images showing substance use, paraphernalia, or consumption without an educational/preventive
+            - Images showing substance use, paraphernalia, or consumption WITHOUT an educational/preventive
             - Images that are educational but unrelated to substances (e.g., general school settings, charts, unrelated social studies).
         """,
 
-        "39. Medication": """\
+        "39. Medication": """
             Decide YES only if the image depicts legal, prescribed medicine in a non-recreational context.
             Positive cues:
             - Pills, syrups, injections, or other medical products clearly used as treatment
@@ -197,7 +203,7 @@ def build_prompt(category: str, subcategory: str, graph_info):
             - Illegal drugs
         """,
 
-        "40. Alcohol": """\
+        "40. Alcohol": """
             Decide YES only if alcohol or alcohol consumption is clearly visible.
             Positive cues:
             - Bottles, cans, or glasses of beer, wine, liquor

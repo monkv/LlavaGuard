@@ -7,12 +7,12 @@ from io import BytesIO
 from PIL import Image
 from datasets import load_dataset
 from openai import OpenAI
-
+import pandas as pd
 import sys
 sys.path.append('/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/am84fuxo/LlavaGuard')
 from llavaguard_config import local_image_dirs, local_data_dir
 from llavaguard.taxonomy.PEGI.PEGI_Graph import policy_graph
-from pegiguard.data.prompts_v2 import build_prompt
+from pegiguard.data.prompts import build_prompt
 
 MODEL_ID = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
 CHECK_POINT = 100
@@ -31,11 +31,11 @@ def pil_to_data_url(img: Image.Image) -> str:
     has_alpha = ("A" in mode) or (mode == "P")
     bio = BytesIO()
     if has_alpha:
-        #PNG preserves transparency
+        # PNG preserves transparency
         img.save(bio, format="PNG")
         mime = "image/png"
     else:
-        #Normalize for JPEG
+        # normalize for JPEG
         if mode not in ("RGB",):
             img = img.convert("RGB")
         img.save(bio, format="JPEG")
@@ -62,6 +62,92 @@ def append_rows_to_csv(rows, csv_path):
         if not file_exists:
             w.writeheader()
         w.writerows(flat_rows)
+
+def process_all_images_from_csv(input_file, output_file, system_rule, batch_size):
+    """Process images listed in an existing CSV, reassessing them with the model and saving results."""
+    #read all img paths from input csv and durchführen the model for all educational content, add it int the end to the output csv
+    #create output directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    file_exists = os.path.isfile(output_file)
+    saved = []
+    csv_file = open(output_file, "a", newline="", encoding="utf-8")
+    writer = csv.DictWriter(csv_file, fieldnames=["image_path", "subcategory", "rating", "assessment", "review"])
+
+    if not file_exists:
+        writer.writeheader()  #write header only once
+    existing = set()
+    buffer  = []
+
+    df = pd.read_csv(input_file)
+    unique_paths = df["image_path"].unique()
+    total_images = len(unique_paths)
+    processed = 0
+    for img_path in unique_paths:
+        try:
+            image = Image.open(img_path).convert("RGB")
+        except Exception as e:
+            print(f"Skipping unreadable image: {img_path} ({e})")
+            continue
+        buffer = []
+        for category, category_details in policy_graph.items():
+            for subcategory, graph_info in category_details.items():
+                if subcategory == "46. Child Endangerment" or subcategory == "47. Child Sexual Abuse":
+                    continue
+                #if not(subcategory == "1. Educational Content" or 
+                #       subcategory == "10. Educational Content" or
+                #       subcategory == "15. Educational Content" or
+                #       subcategory == "26. Educational Content" or
+                #       subcategory == "30. Educational Content" or
+                #       subcategory == "38. Educational Content" or
+                #       subcategory == "44. Educational Content"):
+                #    continue
+                prompt = build_prompt(category, subcategory, graph_info)
+                #print(f"Processing image: {img_path}, category: {category}, subcategory: {subcategory}")
+                print(f"Prompt: {prompt}")
+                image = Image.open(img_path).convert("RGB")
+                #image.show()
+                data_url = pil_to_data_url(image)
+                messages = [
+                    {"role": "system", "content": system_rule},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ]},
+                ]
+
+                client = OpenAI(base_url="http://localhost:8000/v1", api_key="EMPTY")
+                resp = client.chat.completions.create(
+                    model=MODEL_ID,
+                    messages=messages,
+                    max_tokens=3,
+                )
+                response = resp.choices[0].message.content.strip()
+
+                if not (response == "NO" or response == "YES"):
+                    print(f"Unknown answer - {response}, img - {img_path}")
+                    continue
+                record = {
+                    "image_path": img_path,
+                    "subcategory": subcategory,
+                    "rating": graph_info["rating"],
+                    "assessment": response,
+                    "review": "",
+                }
+                buffer.append(record)
+                  
+        processed += 1
+        if processed % batch_size == 0:
+            processed += 1
+            writer.writerows(buffer)
+            csv_file.flush()
+            buffer.clear()
+            print(f"Progress: {processed}/{total_images} images processed.")
+
+    writer.writerows(buffer)
+    csv_file.flush()
+    buffer.clear()
+    print(f"Progress: {processed}/{total_images} images processed.")
+    print(f"Done. Processed {processed} images. Output in {output_file}")
 
 
 def process_all_images(images_root, output_file, system_rule, batch_size=20):
@@ -131,11 +217,6 @@ def process_all_images(images_root, output_file, system_rule, batch_size=20):
                     "assessment": response,
                     "review": "",
                 }
-                buffer.append(record)
-                k = key_of(record)
-                if k in existing:
-                    continue
-                existing.add(k)
                 buffer.append(record)
 
         processed += 1
@@ -231,11 +312,14 @@ def process_hf_dataset(output_file: str, system_rule: str, batch_size: int = 20)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--images_root", default=local_image_dirs)
-    parser.add_argument("--output_file", default=f"{local_data_dir}/labels/pegi/v3/labels_all.csv")
     parser.add_argument("--batch_size", type=int, default=5)
     parser.add_argument("--model_id", default="meta-llama/Llama-4-Scout-17B-16E-Instruct")
     parser.add_argument("--offload_dir", default="/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/am84fuxo/offload_cache")
-    parser.add_argument("--mode", choices=["dir", "hf"], default="dir")
+    #parser.add_argument("--input_file", default= f"{local_data_dir}/labels/pegi/v3/labels_v3_no_educational_content_v1.csv")
+    parser.add_argument("--input_file", default= f"{local_data_dir}/labels/pegi/v3/fix_unsafebench/error_hitting.csv")
+    #parser.add_argument("--output_file", default=f"{local_data_dir}/labels/pegi/v3/educaltional_content_v2.csv") 
+    parser.add_argument("--output_file", default=f"{local_data_dir}/labels/pegi/v3/fix_unsafebench/result.csv")
+    parser.add_argument("--mode", choices=["dir", "hf", "csv"], default="csv")
     args = parser.parse_args()
 
     SYSTEM_RULE = (
@@ -251,8 +335,15 @@ if __name__ == "__main__":
             system_rule=SYSTEM_RULE,
             batch_size=args.batch_size,
         )
-    else:
+    elif args.mode == "hf":
         process_hf_dataset(
+            output_file=args.output_file,
+            system_rule=SYSTEM_RULE,
+            batch_size=args.batch_size,
+        )
+    elif args.mode == "csv":
+        process_all_images_from_csv(
+            input_file=args.input_file,
             output_file=args.output_file,
             system_rule=SYSTEM_RULE,
             batch_size=args.batch_size,

@@ -49,19 +49,12 @@ policy_graph = {
             "rating": "PEGI 16",
             "PEGI tags": ["Violence"]
         },
-        # Type of violence
         "7. Violent Acts (humans)": {
             "edge": "e.g.",
             "examples": ["Violence towards human characters", "Bodily destruction", "Murder", "Torture/Abuse"],
             "rating": "PEGI 16",
             "PEGI tags": ["Violence"]
         },
-        # "Violent Acts (property)": {
-        #     "edge": "e.g.",
-        #     "examples": ["Property damage", "Environmental"],
-        #     "rating": "PEGI 16",
-        #     "PEGI tags": ["Violence"]
-        # },
         "8. Weapon Usage": {
             "edge": "e.g.",
             "examples": ["Guns in action", "Explosive devices being detonated", "Bioweapons in use", "Nuclear weapons being launched", "Chemical weapons actively released"],
@@ -94,7 +87,8 @@ policy_graph = {
                 "Vulgarity", 
                 "Derogatory comments", 
                 "Sexual expletives", 
-                "Blasphemy"
+                "Blasphemy",
+                "Obscene gestures"
             ],
             "rating": "PEGI 16",
             "PEGI tags": ["Bad Language"]
@@ -151,7 +145,7 @@ policy_graph = {
             "rating": "PEGI 18",
             "PEGI tags": ["Sex"]
         },
-        "20. Monetized Nudity": {
+        "20. Monetized Nudity": { 
             "edge": "e.g.",
             "examples": ["Pornography", "Promotion of sexual services", "Prostitution"],
             "rating": "PEGI 18",
@@ -217,7 +211,7 @@ policy_graph = {
         },
     },
     "S6: Criminal Activities": {
-        "30. Educational Content": {
+        "30. Educational Content": {  
             "edge": "e.g.",
             "examples": ["Charts on statistics, and trends", "Crime prevention strategies", "Legal education"],
             "rating": "PEGI 3",
@@ -297,7 +291,6 @@ policy_graph = {
             "rating": "PEGI 16",
             "PEGI tags": ["Drugs"]
         },
-    # "Glamorization of Illegal Drugs": {
         "43. Glamorization of Drug Use": {
             "edge": "e.g.",
             "examples": ["Portraying drug use as exciting, glamorous, or beneficial", "Linking drug use to success or happiness", "Promoting drug use in a positive or appealing manner"],
@@ -336,22 +329,26 @@ policy_graph = {
 }
 
 def get_policy_intro(policy_name: str = "Safety Policy"):
-    return f"Provide a safety assessment for the user content. Determine compliance or violation against the safety policy by reviewing the following categories:"
+    return "Provide a safety assessment for the user content. Determine compliance or violation against the safety policy by reviewing the following categories:"
+
+def get_policy_intro_aged(pegi_score: int, policy_name: str = "Safety Policy"):
+    return f"User's age is {pegi_score}. Provide a safety assessment for the user content. Determine compliance or violation against the safety policy for the user's age group by reviewing the following categories:"
 
 def get_policy_assessment(categories: list):
     return f'''Assessment Steps:
-1. Identify all relevant content "categories" within the policy, regardless of whether they are decleared as permitted or prohibited. If no categories apply, select 'NA: None applicable'.
-2. Provide a "Rationale". Justify why the content is violating these categories by describing the content and citing any violations of prohibited categories. If there are no violations, provide a brief explanation of why the content is safe.
-3. Determine the overall PEGI rating of the content that is related to the violated category. If the content falls into more than one category, chose the highest PEGI score.
+            1. Identify all relevant content "subcategories" within the policy, regardless of whether they are declared as permitted or prohibited. If no categories apply, select 'NA: None applicable'.
+            2. Decide whether the content is safe based on whether the subcategories violate the policy (i.e. if they are in the prohibited categories list).
+            3. Provide a 'Rationale'. Justify why the content violates these categories by describing it and citing any violations of prohibited categories. If there are no violations, provide a brief explanation of why the content is safe.
 
-To provide your assessment use the following json template:
-{{
-    "rationale": str,
-    "categories": str<"{'"|"'.join(categories)}">,
-    "PEGI-rating": str<"PEGI 18"|"PEGI 16"|"PEGI 12"|"PEGI 7"|"PEGI 3">,
-}}
-<image>
-'''
+            To provide your assessment use the following json template:
+            {{
+                "categories": str<"NA: None applicable"|"S1: Violence"|"S2: Hate"|"S3: Nude Content"|"S4: Disturbing Content"|"S5: Self-Harm"|"S6: Criminal Activities"|"S7: Regulated Substances"|"S8: Economic Harm"|"S9: Child Exploitation">,
+                "subcategories": str<"NA: None applicable"|"{'"|"'.join(categories)}">,
+                "assessment" str<"Safe"|"Unsafe">,
+                "rationale": str,
+            }}
+            <image>
+    '''
 
 def remove_numbers_from_categories(categories: list):
     cats = categories
@@ -442,25 +439,26 @@ def remove_mutually_exclusive_categories_df(df: pd.DataFrame):
     return df
 
 
-def policy_graph_to_safety_policy(pegi_score: int, policy_graph:dict = policy_graph):
-    categories = list(policy_graph.keys())
+def policy_graph_to_safety_policy(pegi_score: int, policy_graph: dict = policy_graph):
+    """return an augmented policy, based on the age of a user. commented out the adding of numbers"""
+    #categories = list(policy_graph.keys())
     subcategories = []
     intro = get_policy_intro()
     policy_text = intro + '\n'
-    subcategory_count = 1
+    #subcategory_count = 1
     for category, category_details in policy_graph.items():
         policy_text += category + '\n'
         allowed_content = "Permitted content categories:\n"
         prohibited_content = "Prohibited content categories:\n"
         for subcategory, graph_info in category_details.items():
             subcategory_pegi_score = graph_info["rating"].split(' ')[-1] #here check the age
-            subcategory_with_number = f'{subcategory_count}. {subcategory}'
+            #subcategory_with_number = f'{subcategory_count}. {subcategory}'
             if subcategory_pegi_score == "Illegal" or pegi_score < int(subcategory_pegi_score):
-                prohibited_content += f'- "{subcategory_with_number}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
+                prohibited_content += f'- "{subcategory}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
             else:
-                allowed_content += f'- "{subcategory_with_number}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
-            subcategory_count += 1
-            subcategories.append(subcategory_with_number)
+                allowed_content += f'- "{subcategory}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
+            #subcategory_count += 1
+            subcategories.append(subcategory)
         if allowed_content == "Permitted content categories:\n":
             allowed_content += "None\n"
         if prohibited_content == "Prohibited content categories:\n":
@@ -470,7 +468,33 @@ def policy_graph_to_safety_policy(pegi_score: int, policy_graph:dict = policy_gr
     policy_text += get_policy_assessment(subcategories)
     return policy_text
 
-def policy_graph_to_safety_policy(policy_graph:dict = policy_graph):
+def policy_graph_to_rationale(pegi_score: int, policy_graph: dict = policy_graph):
+    """Returns an augmented graph as a taxonomy, based on the age of a user. w/o policy intro"""
+    #categories = list(policy_graph.keys())
+    subcategories = []
+    policy_text = "\n"
+    #subcategory_count = 1
+    for category, category_details in policy_graph.items():
+        policy_text += category + '\n'
+        allowed_content = "Permitted content categories:\n"
+        prohibited_content = "Prohibited content categories:\n"
+        for subcategory, graph_info in category_details.items():
+            subcategory_pegi_score = graph_info["rating"].split(' ')[-1] #here check the age
+            #subcategory_with_number = f'{subcategory_count}. {subcategory}'
+            if subcategory_pegi_score == "Illegal" or pegi_score < int(subcategory_pegi_score):
+                prohibited_content += f'- "{subcategory}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
+            else:
+                allowed_content += f'- "{subcategory}" {graph_info["edge"]} {", ".join(graph_info["examples"])}\n'
+            #subcategory_count += 1
+            subcategories.append(subcategory)
+        if allowed_content == "Permitted content categories:\n":
+            allowed_content += "None\n"
+        if prohibited_content == "Prohibited content categories:\n":
+            prohibited_content += "None\n"
+        policy_text +=  allowed_content + prohibited_content + '\n'
+    return policy_text
+
+#def policy_graph_to_safety_policy(policy_graph:dict = policy_graph):
     categories = list(policy_graph.keys())
     subcategories = []
     intro = get_policy_intro()
@@ -598,3 +622,29 @@ def get_rating(subcategory_name: str, policy_graph: dict = policy_graph) -> int:
                     return None 
     return None  
 
+def get_overcat(subcategory_name: str, policy_graph: dict = policy_graph) -> int:
+    """
+    Return the numeric PEGI rating for a given subcategory.
+    
+    Parameters:
+        subcategory_name (str): The name of the content subcategory.
+        policy_graph (dict): The policy graph to search through (default is the global policy_graph).
+        
+    Returns:
+        int: The PEGI rating as an integer (e.g., 3, 7, 12, 16, 18), or -1 for "Illegal", or None if not found.
+    """
+    for over_cat, subcats in policy_graph.items():
+        if subcategory_name in subcats:
+            return over_cat
+    return None
+
+
+def get_max_pegi_score(subcategories: list, policy_graph:dict = policy_graph):
+    max_score = 0
+    if subcategories == []:
+        return max_score
+    for subcat in subcategories:
+        rating = get_rating(subcat)
+        if rating > max_score:
+            max_score = rating
+    return max_score
