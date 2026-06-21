@@ -3,7 +3,7 @@ import re
 import os
 import argparse
 import sys
-sys.path.append('/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/am84fuxo/LlavaGuard')
+sys.path.append('/pfss/mlde/workspaces/mlde_wsp_PI_Kersting/am84fuxo/LlavaGuard')
 
 from openai import OpenAI
 from PIL import Image
@@ -89,7 +89,7 @@ def call_vllm(img_path: str, prompt: str, model, sample_id) -> Dict[str, Any]:
         model=model,
         messages=messages,
     )
-    raw_repsonse = resp.choices[0].message.content.strip()
+    raw_repsonse = (resp.choices[0].message.content or "").strip()
     try:
         response = extract_json(raw_repsonse)
     except Exception as e:

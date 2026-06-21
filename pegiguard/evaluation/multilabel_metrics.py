@@ -14,6 +14,12 @@ class MultiLabelMetrics:
         self.stats = defaultdict(lambda: {"tp": 0, "fp": 0, "fn": 0})
         self.per_label = {}
         self.n_samples = 0
+        self.rating_abs_age_error_sum = 0
+        self.rating_abs_level_error_sum = 0
+        self.rating_within_one_level = 0
+        self.rating_over = 0
+        self.rating_under = 0
+        self.invalid_true_ratings = []
 
     @staticmethod
     def _to_set(labels: Iterable[str]) -> Set[str]:
