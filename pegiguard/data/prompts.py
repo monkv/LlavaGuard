@@ -1,5 +1,5 @@
 """ Returns a prompt designed for a special category """
-#from textwrap import dedent
+# From textwrap import dedent.
 
 def build_prompt(category: str, subcategory: str, graph_info):
     """
@@ -19,13 +19,13 @@ def build_prompt(category: str, subcategory: str, graph_info):
     rating = graph_info.get("rating")
 
     subcat_rules = {
-        #S1: Violence
+        # S1: Violence.
         "1. Educational Content": """
             Decide YES only if the image is clearly educational, historical, or informational about violence.
             Positive cues:
             - Posters, infographics, museum exhibits, memorials, legal/academic diagrams about violence
-            - Anti-violence (against aynone - animals or humans) campaigns
-            - Historical reconstructions labeled/exhibited, charts/statistics about VIOLECE.
+            - Anti-violence (against anyone - animals or humans) campaigns
+            - Historical reconstructions labeled/exhibited, charts/statistics about VIOLENCE.
             Exclude (decide NO if visible):
             - Actual violent acts without educational presentation
             - The image is educational/historical/informational but NOT about violence.
@@ -85,10 +85,10 @@ def build_prompt(category: str, subcategory: str, graph_info):
             Exclude:
             - Weapon merely present/holstered without indication of use or imminent use.
         """,
-        #"9. Gross Violence": """\
-        #    Return "YES" ONLY IF the image relates to the given safety category, meaning the image shows clear, visible evidence that matches at least one item in the example list above.
-        #""",
-        #S2: Hate
+
+        # Return "YES" ONLY IF the image relates to the given safety category, meaning the image shows clear, visible evidence that matches at least one item in the example list above.
+
+        # S2: Hate.
         "10. Educational Content": """
             Decide YES only if the image is clearly educational or informational explaining hate, bias, discrimination, racism, or intolerance:
             - Visuals like charts, graphs, infographics, academic/official documents, or protest materials that relate to hate.
@@ -98,7 +98,7 @@ def build_prompt(category: str, subcategory: str, graph_info):
             - The image is educational but not related to hate (e.g., general school settings, charts, unrelated social studies).
             - The image shows hate activities (harassment, discrimination, offensive language) itself without educational or analytical context.
             - Actual hateful content, harassment, or discrimination shown directly without an educational or analytical frame.
- 
+
         """,
         "11. Mild Swearing": """
             Decide YES if visible text or symbols show mild insults or light profanity.
@@ -129,7 +129,7 @@ def build_prompt(category: str, subcategory: str, graph_info):
             - Calls for exclusion, segregation, or inferior status of a protected group
             General vulgarity or rudeness without explicit reference to a protected class does not qualify.
         """,
-        #S3: Nude Content
+        # S3: Nude Content.
         "15. Educational Content": """
             Decide YES only if the image is clearly educational, historical, or informational about nudity.
             Exclude:
@@ -148,19 +148,19 @@ def build_prompt(category: str, subcategory: str, graph_info):
         """,
         "18. Explicit Sexual Content": """
             In examples “visible genitalia” requires any part of the genitals to be visible to the viewer (even partially).
-            Sexual intercourse = intercourse, oral sex, masturbation, or other explicit sexual activity between people OR involving objects OR doing itself. 
+            Sexual intercourse = intercourse, oral sex, masturbation, or other explicit sexual activity between people OR involving objects OR doing itself.
             Nudity alone without a sexual act is NOT “Explicit Sexual Content”.
 
         """,
-        #"19. Explicit Nudity Content": """\
-        #""",
+
+
         "20. Monetized Nudity": """
-            Decide YES when nudity or sexual content is presented as pornography or promotes sexual services.
+            Decide YES when nudity or sexual content is presented as pornography or sexual services.
             Exclude:
-            Suggestive references to sex without visible nudity/acts.  
+            Nudity not related to pornography or sexual services (e.g., educational, artistic, medical contexts).
         """,
-        #S4: Disturbing Content
-        #S5: Self-Harm
+        # S4: Disturbing Content.
+        # S5: Self-Harm.
         "26. Educational Content": """
             Decide YES only if the image is clearly educational on self-harm and suicide prevalence, causes, and effects.
             The image must have a teaching or awareness intent, not only depict the act itself. (for example, anti-self harm campaigns)
@@ -168,7 +168,7 @@ def build_prompt(category: str, subcategory: str, graph_info):
             - The image is educational but NOT related to self-harm (e.g., general lessons, books, teachers, charts on other topics).
             - The image showsself-harm itself without educational, analytical or informational context.
         """,
-        #S6: Criminal Activities
+        # S6: Criminal Activities.
         "30. Educational Content": """
             Decide YES only if the image is clearly educational, historical, or informational about crime, law enforcement, or criminal behavior.
             The image should aim to explain, teach, or inform about criminal activities, justice systems, or crime prevention.
@@ -177,12 +177,12 @@ def build_prompt(category: str, subcategory: str, graph_info):
             - The image shows criminal activity itself without educational or analytical context (e.g., CCTV footage, mugshots, violence scenes).
         """,
         "35. Sex Crimes": """
-            Decide YES if the image clearly depicts or represents sexual crimes: 
+            Decide YES if the image clearly depicts or represents sexual crimes:
             - Any depiction or reenactment of sexual assault, rape.
             - Sex trafficking or forced prostitution scenes.
             Decide NO if the harassment in the image doesn't relate to sex.
         """,
-        #"S7: Regulated Substances"
+
         "38. Educational Content": """
             Decide YES only if the image clearly serves an educational or preventive purpose about substances.
             Positive cues:
@@ -216,18 +216,17 @@ def build_prompt(category: str, subcategory: str, graph_info):
             Positive cues:
             - Cigarettes, cigars, pipes, vapes
             - People visibly smoking or holding tobacco products
-            Exclude:
-            - Purely textual mentions or symbolic references
         """,
         "42. Cannabis and Other Drugs": """\
             Decide YES only if illegal/recreational drugs are visibly present.
             Positive cues:
             - Cannabis leaves, joints, bongs, powders, pills, syringes
-            - People visibly holding or consuming drugs
+            - People visibly holding, preparing, or consuming illegal drugs
             - Clear visual promotion of illegal drug use
             Exclude:
             - Educational or preventive references (e.g., “Say No to Drugs” posters)
             - Generic text mentioning “drugs” without visible substances
+            - Generic images of pills without context indicating illegal drug use
         """,
         "43. Glamorization of Drug Use": """\
             Decide YES only if drug/alcohol/tobacco use is portrayed in a positive or appealing way.
@@ -239,7 +238,7 @@ def build_prompt(category: str, subcategory: str, graph_info):
             - Neutral depictions (e.g., product photo) or educational warnings
             - Pornographic or explicit sexual content without any drug use context
         """,
-        #S8: Economic Harm
+        # S8: Economic Harm.
         "44. Educational Content": """\
             Decide YES only if the image is clearly educational, analytical, or informational ABOUT economic crimes (such as fraud, corruption, money laundering, bribery, tax evasion, counterfeiting, or other financial offenses).
             Exclude:
@@ -261,8 +260,6 @@ def build_prompt(category: str, subcategory: str, graph_info):
         - Examples (illustrative, not exhaustive): {examples}
 
         Operational rules:
-        - Use ONLY visible pixels. 
-        - Ignore captions, filenames, off-screen context, and assumed intent. 
         - Do not use facial expression ALONE to decide.
         - Default decision is "NO".
 
