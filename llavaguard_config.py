@@ -295,38 +295,48 @@ llava_guard_config = {
     },
 }
 
-local_data_dir = f'/common-repos/LlavaGuard'
+workspace_dirs = {
+    'kiservicecenter': '/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/am84fuxo',
+    'pikersting': '/pfss/mlde/workspaces/mlde_wsp_PI_Kersting/am84fuxo'
+}
+
+workspace_dir = workspace_dirs["pikersting"]
+
+if not os.path.exists(workspace_dir):
+    workspace_dir = workspace_dirs["kiservicecenter"]
+if not os.path.exists(workspace_dir):
+    raise ValueError(f'could not find workspace dir. Please correct path {workspace_dir}')
+
+local_data_dir = '/common-repos/LlavaGuard/data'
+
+local_models_dir = f'{workspace_dir}/models'
+
 if not os.path.exists(local_data_dir):
-    #local_data_dir = '/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/lhelff/ds/LlavaGuard'
-    local_data_dir = '/pfss/mlde/workspaces/mlde_wsp_KIServiceCenter/am84fuxo'
+    local_data_dir = f'{workspace_dir}/data'
 if not os.path.exists(local_data_dir):
     raise ValueError(f'could not find local data dir. Please correct path {local_data_dir}')
 
 
-
-
 generated_rationales_dirs = {
     'v1': {
-        'smid': f'{local_data_dir}/data/rationales/v1/smid',
-        'real_images': f'{local_data_dir}/data/rationales/v1/real_images',
+        'smid': f'{local_data_dir}/rationales/v1/smid',
+        'real_images': f'{local_data_dir}/rationales/v1/real_images',
     },
-    'v2': f'{local_data_dir}/data/rationales/llava-v1.6-34b-json-v8/model_output',
-    'v3': f'{local_data_dir}/data/rationales/llava-v1.6-34b-json-v16/model_output',
-    'v4': f'{local_data_dir}/data/rationales/llava-v1.6-34b-json-v16-v4/model_output',
-    'v5': f'{local_data_dir}/data/rationales/llava-v1.6-34b-json-v16-v5/model_output'
+    'v2': f'{local_data_dir}/rationales/llava-v1.6-34b-json-v8/model_output',
+    'v3': f'{local_data_dir}/rationales/llava-v1.6-34b-json-v16/model_output',
+    'v4': f'{local_data_dir}/rationales/llava-v1.6-34b-json-v16-v4/model_output',
+    'v5': f'{local_data_dir}/rationales/llava-v1.6-34b-json-v16-v5/model_output'
 }
 
 local_image_dirs = {
-    'smid': f'{local_data_dir}/data/images/smid',
-    'real_images': f'{local_data_dir}/data/images/real_images',
-    'synthetic': f'{local_data_dir}/data/images/synthetic_data',
-    "crawled": f'{local_data_dir}/data/images/crawled_data'
+    'smid': f'{local_data_dir}/images/smid',
+    'real_images': f'{local_data_dir}/images/real_images',
+    'synthetic': f'{local_data_dir}/images/synthetic_data',
+    "crawled": f'{local_data_dir}/images/crawled_data'
 }
 
 human_feedback_dirs = {
-    'smid': f'{local_data_dir}/data/annotations/smid',
-    'real_images': f'{local_data_dir}/data/annotations/real_images',
-    'synthetic': f'{local_data_dir}/data/annotations/synthetic_data',
+    'smid': f'{local_data_dir}/annotations/smid',
+    'real_images': f'{local_data_dir}/annotations/real_images',
+    'synthetic': f'{local_data_dir}/annotations/synthetic_data',
 }
-
-

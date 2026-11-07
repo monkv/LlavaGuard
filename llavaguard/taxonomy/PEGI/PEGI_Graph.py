@@ -4,20 +4,19 @@ import pandas as pd
 
 policy_graph = {
     "S1: Violence": {
-        "1. Educational Content": { # violent but educational...
+        "1. Educational Content": {
             "edge": "e.g.",
             "examples": ["Charts on violence statistics, and trends", "Informational content on prevalence, causes, and effects of violence", "Legal education", "Memorials and statues of historical figures linked to violence"],
             "rating": "PEGI 3",
             "PEGI tags": []
         },
-        # Severity of violence
         "2. Unrealistic and Implied Violence": {
             "edge": "e.g.",
             "examples": ["Non-realistic violence", "Non-detailed violence"],
             "rating": "PEGI 7",
             "PEGI tags": ["Violence"]
         },
-        "3. Military and Warfare": { # maybe Military and warefare is redundant
+        "3. Military and Warfare": {
             "edge": "e.g.",
             "examples": ["Military", "Warfare", "Soldiers", "Combat", "Battle"],
             "rating": "PEGI 12",
@@ -84,9 +83,9 @@ policy_graph = {
         "12. Offensive Language": {
             "edge": "e.g.",
             "examples": [
-                "Vulgarity", 
-                "Derogatory comments", 
-                "Sexual expletives", 
+                "Vulgarity",
+                "Derogatory comments",
+                "Sexual expletives",
                 "Blasphemy",
                 "Obscene gestures"
             ],
@@ -145,7 +144,7 @@ policy_graph = {
             "rating": "PEGI 18",
             "PEGI tags": ["Sex"]
         },
-        "20. Monetized Nudity": { 
+        "20. Monetized Nudity": {
             "edge": "e.g.",
             "examples": ["Pornography", "Promotion of sexual services", "Prostitution"],
             "rating": "PEGI 18",
@@ -211,7 +210,7 @@ policy_graph = {
         },
     },
     "S6: Criminal Activities": {
-        "30. Educational Content": {  
+        "30. Educational Content": {
             "edge": "e.g.",
             "examples": ["Charts on statistics, and trends", "Crime prevention strategies", "Legal education"],
             "rating": "PEGI 3",
@@ -284,7 +283,7 @@ policy_graph = {
             "examples": ["Tobacco consumption", "Tobacco products"],
             "rating": "PEGI 16",
             "PEGI tags": ["Drugs"]
-        },        
+        },
         "42. Cannabis and Other Drugs": {
             "edge": "e.g.",
             "examples": ["Cannabis", "Other illegal drugs"],
@@ -328,27 +327,45 @@ policy_graph = {
     }
 }
 
-def get_policy_intro(policy_name: str = "Safety Policy"):
-    return "Provide a safety assessment for the user content. Determine compliance or violation against the safety policy by reviewing the following categories:"
 
-def get_policy_intro_aged(pegi_score: int, policy_name: str = "Safety Policy"):
-    return f"User's age is {pegi_score}. Provide a safety assessment for the user content. Determine compliance or violation against the safety policy for the user's age group by reviewing the following categories:"
+def get_policy_intro():
+    return "Provide a safety assessment for the user content. Determine compliance or violation of the safety policy by reviewing the following categories:"
+
+def get_policy_intro_aged(pegi_score: int):
+    return f"The user's age is {pegi_score}. Provide a safety assessment of the content according to the safety policy for this PEGI age group. Determine compliance or violation of the safety policy by reviewing the following categories:"
 
 def get_policy_assessment(categories: list):
     return f'''Assessment Steps:
-            1. Identify all relevant content "subcategories" within the policy, regardless of whether they are declared as permitted or prohibited. If no categories apply, select 'NA: None applicable'.
-            2. Decide whether the content is safe based on whether the subcategories violate the policy (i.e. if they are in the prohibited categories list).
-            3. Provide a 'Rationale'. Justify why the content violates these categories by describing it and citing any violations of prohibited categories. If there are no violations, provide a brief explanation of why the content is safe.
+    1. Identify all relevant content "subcategories" within the policy, regardless of whether they are declared as permitted or prohibited. If no categories apply, select 'NA: None applying'.
+    2. Decide whether the content is safe for the user based on whether the subcategories violate the policy (i.e. if they are in the prohibited categories list).
+    3. Provide a 'Rationale'. Justify why the content violates these categories by describing it and citing any violations of prohibited categories. If there are no violations, provide a brief explanation of why the content is safe.
 
-            To provide your assessment use the following json template:
-            {{
-                "categories": str<"NA: None applicable"|"S1: Violence"|"S2: Hate"|"S3: Nude Content"|"S4: Disturbing Content"|"S5: Self-Harm"|"S6: Criminal Activities"|"S7: Regulated Substances"|"S8: Economic Harm"|"S9: Child Exploitation">,
-                "subcategories": str<"NA: None applicable"|"{'"|"'.join(categories)}">,
-                "assessment" str<"Safe"|"Unsafe">,
-                "rationale": str,
-            }}
-            <image>
+    To provide your assessment use the following json template:
+    {{
+        "categories": str<"NA: None applying"|"S1: Violence"|"S2: Hate"|"S3: Nude Content"|"S4: Disturbing Content"|"S5: Self-Harm"|"S6: Criminal Activities"|"S7: Regulated Substances"|"S8: Economic Harm"|"S9: Child Exploitation">,
+        "subcategories": str<"NA: None applying"|"{'"|"'.join(categories)}">,
+        "assessment" str<"Safe"|"Unsafe">,
+        "rationale": str,
+    }}
+    <image>
     '''
+
+def get_policy_rating(categories: list):
+    return f'''Assessment Steps:
+    1. Identify all relevant content "subcategories" within the policy. If no subcategories apply, select 'NA: None applying'.
+    2. Determine the overall PEGI rating of the image based on the relevant subcategories. This must correspond to the highest PEGI value among the selected subcategories.
+    3. Provide a 'Rationale'. Justify why the content relates to these subcategories and explain how the overall PEGI rating is determined.
+
+    To provide your assessment use the following JSON template:
+    {{
+        "categories": str<"NA: None applying"|"S1: Violence"|"S2: Hate"|"S3: Nude Content"|"S4: Disturbing Content"|"S5: Self-Harm"|"S6: Criminal Activities"|"S7: Regulated Substances"|"S8: Economic Harm"|"S9: Child Exploitation"|str<"NA: None applying"|one or multiple of ...>
+        "subcategories": str<"NA: None applying"|"{'"|"'.join(categories)}">,
+        "PEGI rating": str<"3"|"7"|"12"|"16"|"18">,
+        "rationale": str
+    }}
+    <image>
+    '''
+
 
 def remove_numbers_from_categories(categories: list):
     cats = categories
@@ -359,6 +376,30 @@ def remove_numbers_from_categories(categories: list):
     return cats
 
 def remove_mutually_exclusive_categories(categories: list):
+    violence = ['Unrealistic and Implied Violence', 'Mild Violence', 'Realistic Violence','Gross Violence']
+    hate = ['Mild Swearing', 'Offensive Language',]
+    nudity = ['Sexual Innuendo', 'Mild Nudity Content', 'Explicit Nudity Content','Explicit Sexual Content', ]
+    disturbing = ['Scary Content', 'Moderately Disturbing Content', 'Highly Disturbing Content']
+    self_harm = ['Non-realistic Self-harm', 'Self-injury', 'Suicide']
+
+    category_names = {
+        category: category.split('. ', 1)[-1]
+        for category in categories
+    }
+    categories_to_be_removed = set()
+
+    # Check from most severe to least severe
+    for exclusive_list in [violence, hate, nudity, disturbing, self_harm]:
+        for c_id in range(len(exclusive_list) - 1, -1, -1):
+            if exclusive_list[c_id] in category_names.values():
+                categories_to_be_removed.update(exclusive_list[:c_id])
+                break
+
+    cleaned_list = [category for category in categories if category_names[category] not in categories_to_be_removed]
+
+    return cleaned_list
+
+#def remove_mutually_exclusive_categories(categories: list):
     categories = remove_numbers_from_categories(categories)
     violence = ['Unrealistic and Implied Violence', 'Mild Violence', 'Realistic Violence','Gross Violence']
     hate = ['Mild Swearing', 'Offensive Language',]
@@ -372,7 +413,7 @@ def remove_mutually_exclusive_categories(categories: list):
             if exclusive_list[c_id] in categories:
                 categories_to_be_removed += exclusive_list[:c_id]
                 break
-    cleaned_list = [category for category in categories if category not in categories_to_be_removed]
+    cleaned_list = [category for category in categories if category_names[category] not in categories_to_be_removed]
     return cleaned_list
 
 
@@ -386,10 +427,10 @@ def remove_mutually_exclusive_categories_df(df: pd.DataFrame):
     df.columns = [c.split('. ')[-1] for c in df.columns]
     # reindex the dataframe
     df = df.reset_index(drop=True)
-    
+
     for category in df.columns:
         for row in range(len(df)):
-            entry = df.loc[row, category]                
+            entry = df.loc[row, category]
             entry = entry.iloc[0] if isinstance(entry, pd.Series) else entry
             # print(entry)
             if entry == 1:
@@ -443,7 +484,7 @@ def policy_graph_to_safety_policy(pegi_score: int, policy_graph: dict = policy_g
     """return an augmented policy, based on the age of a user. commented out the adding of numbers"""
     #categories = list(policy_graph.keys())
     subcategories = []
-    intro = get_policy_intro()
+    intro = get_policy_intro_aged(pegi_score)
     policy_text = intro + '\n'
     #subcategory_count = 1
     for category, category_details in policy_graph.items():
@@ -467,6 +508,21 @@ def policy_graph_to_safety_policy(pegi_score: int, policy_graph: dict = policy_g
 
     policy_text += get_policy_assessment(subcategories)
     return policy_text
+
+def policy_graph_to_rating_policy():
+    intro = "Determine an overall PEGI age rating of the content according to this safety policy:"
+    policy_text = intro + '\n'
+    for category, category_details in policy_graph.items():
+        policy_text += category + '\n'
+        for subcategory, graph_info in category_details.items():
+            edge = graph_info["edge"]
+            examples = ", ".join(graph_info["examples"])
+            rating = graph_info["rating"]
+            subcat_string = f'"{subcategory}" {edge} {examples} - {rating}'
+            policy_text += subcat_string + '\n'
+    policy_text += get_policy_rating(get_content_categories(policy_graph))
+    return policy_text
+
 
 def policy_graph_to_rationale(pegi_score: int, policy_graph: dict = policy_graph):
     """Returns an augmented graph as a taxonomy, based on the age of a user. w/o policy intro"""
@@ -524,7 +580,7 @@ def policy_graph_to_rationale(pegi_score: int, policy_graph: dict = policy_graph
 
 #something wrong with this function
 def policy_graph_to_safety_policy_v2(policy_graph:dict = policy_graph):
-    
+
     subcategories = []
     intro = "Given the following safety policy determine which of the categories are present within the users content:\n"
     policy_text = ''
@@ -541,14 +597,47 @@ def policy_graph_to_safety_policy_v2(policy_graph:dict = policy_graph):
     return intro + policy_text + get_policy_assessment(subcategories)
 
 
-def get_content_categories(policy_graph):
+def get_content_categories(policy_graph: dict = policy_graph):
+    """
+    Return a list of policy safety-categories.
+    Return: ['1. Educational Content', '2. Unrealistic and Implied Violence', ...]
+    """
     content_categories = []
     for safety_category_details in policy_graph.values():
         content_categories += list(safety_category_details.keys())
     return content_categories
 
 
-def get_content_categories_with_numbers(policy_graph):
+# changed OVER -> SUPER!!
+def get_content_super_categories(policy_graph: dict = policy_graph):
+    """
+    Return a list of policy super-categories (those starting with 'S').
+    Return: ["S1: Violence", "S2: Hate", ...]
+    """
+    #if not isinstance(policy_graph, dict):
+    #    raise TypeError('policy_graph must be a dict')
+    content_over_categories = []
+    content_over_categories = [k for k in policy_graph.keys() if isinstance(k, str) and k.strip().startswith('S')]
+    return content_over_categories
+
+def get_super_cats_from_subcats(subcategories: list, policy_graph: dict = policy_graph):
+    """
+    Return a list of super-categories (those starting with 'S') for the given subcategories (e.g. ['2. Unrealistic and Implied Violence', ..]).
+    Return: ["S1: Violence", "S2: Hate", ...]
+    """
+    super_categories = []
+    if subcategories == [] or subcategories == "NA: None applying":
+        return "NA: None applying"
+    for subcategory in subcategories:
+        if subcategory == "NA: None applying":
+            return "NA: None applying"
+        for super_category, category_details in policy_graph.items():
+            if subcategory in category_details:
+                super_categories.append(super_category) if super_category not in super_categories else None
+                break
+    return super_categories
+
+def get_content_categories_with_numbers(policy_graph: dict = policy_graph):
     content_categories = []
     subcategory_count = 1
     for safety_category_details in policy_graph.values():
@@ -558,7 +647,7 @@ def get_content_categories_with_numbers(policy_graph):
     return content_categories
 
 
-def get_content_categories_with_examples(policy_graph):
+def get_content_categories_with_examples(policy_graph: dict = policy_graph):
     content_categories = []
     for safety_category_details in policy_graph.values():
         for content_category, graph_info in safety_category_details.items():
@@ -600,11 +689,11 @@ def get_majority_vote_from_df(violations: pd.DataFrame):
 def get_rating(subcategory_name: str, policy_graph: dict = policy_graph) -> int:
     """
     Return the numeric PEGI rating for a given subcategory.
-    
+
     Parameters:
         subcategory_name (str): The name of the content subcategory.
         policy_graph (dict): The policy graph to search through (default is the global policy_graph).
-        
+
     Returns:
         int: The PEGI rating as an integer (e.g., 3, 7, 12, 16, 18), or -1 for "Illegal", or None if not found.
     """
@@ -614,22 +703,35 @@ def get_rating(subcategory_name: str, policy_graph: dict = policy_graph) -> int:
                 rating_str = graph_info["rating"]
                 if rating_str == "Illegal":
                     return -1
-                try:
-                    rating = int(rating_str.split()[-1])
-                    #print(f'Rating = {rating}')
-                    return rating
-                except ValueError:
-                    return None 
-    return None  
+                rating = int(rating_str.split()[-1])
+                #print(f'Rating = {rating}')
+                return rating
+
+def get_pegi_tags(subcategory_name: str, policy_graph: dict = policy_graph) -> list:
+    """
+    Return the PEGI tags for a given subcategory.
+
+    Parameters:
+        subcategory_name (str): The name of the content subcategory.
+        policy_graph (dict): The policy graph to search through (default is the global policy_graph).
+
+    Returns:
+        list: A list of PEGI tags (e.g., ["Violence", "Discrimination"]), or empty list if not found.
+    """
+    for category_details in policy_graph.values():
+        for subcategory, graph_info in category_details.items():
+            if subcategory == subcategory_name:
+                return graph_info.get("PEGI tags", [])
+    return []
 
 def get_overcat(subcategory_name: str, policy_graph: dict = policy_graph) -> int:
     """
     Return the numeric PEGI rating for a given subcategory.
-    
+
     Parameters:
         subcategory_name (str): The name of the content subcategory.
         policy_graph (dict): The policy graph to search through (default is the global policy_graph).
-        
+
     Returns:
         int: The PEGI rating as an integer (e.g., 3, 7, 12, 16, 18), or -1 for "Illegal", or None if not found.
     """
@@ -640,11 +742,35 @@ def get_overcat(subcategory_name: str, policy_graph: dict = policy_graph) -> int
 
 
 def get_max_pegi_score(subcategories: list, policy_graph:dict = policy_graph):
-    max_score = 0
-    if subcategories == []:
+    #print("SUBCATS: ", subcategories)
+    max_score = 3
+    if isinstance(subcategories, str):
+        if subcategories == "NA: None applying":
+            return max_score
+        raise ValueError("Expected a list of subcategories")
+    if not subcategories:
         return max_score
     for subcat in subcategories:
-        rating = get_rating(subcat)
+        if subcat == "NA: None applying":
+            continue
+        rating = get_rating(subcat, policy_graph)
+        if rating is None:
+            raise ValueError(f"Unknown subcategory: {subcat}")
+        if rating == -1:
+            raise ValueError("Illegal-content labels do not have a PEGI age rating")
         if rating > max_score:
             max_score = rating
     return max_score
+
+
+def graph_with_ratings(policy_graph: dict = policy_graph):
+    """Print and return the full taxonomy with each subcategory rating."""
+    lines = []
+    for category, details in policy_graph.items():
+        lines.append(category)
+        for subcategory, info in details.items():
+            examples = ", ".join(info["examples"])
+            lines.append(f'"{subcategory}" {info["edge"]} {examples} - {info["rating"]}')
+    text = "\n".join(lines)
+    print(text)
+    return text
