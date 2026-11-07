@@ -2,18 +2,22 @@
 set -u
 
 MODELS=(
-  #"Qwen/Qwen3.6-35B-A3B" #
-  "google/gemma-4-E2B-it"
-  "google/gemma-4-12B-it"
+  "OpenGVLab/InternVL3-9B"
   "moonshotai/Kimi-VL-A3B-Instruct"
-  #"OpenGVLab/InternVL3-1B-hf"
 )
+#OpenGVLab/InternVL3_5-14B
+#"google/gemma-3-12b-it"
+#"moonshotai/Kimi-VL-A3B-Instruct"
+#internlm/internlm3-8b-instruct
+#"google/gemma-4-E2B-it"
+#"google/gemma-4-12B-it"
+#"OpenGVLab/InternVL3-1B-hf"
+#"Qwen/Qwen3.6-35B-A3B"
 
 TP=2
 PORT=8000
 
-SAVE_BASE="/pfss/mlde/workspaces/mlde_wsp_PI_Kersting/am84fuxo/data/evaluation/age_rating/base_models""
-
+SAVE_BASE="/pfss/mlde/workspaces/mlde_wsp_PI_Kersting/am84fuxo/data/evaluation/age_rating/base_models"
 DATA_PATH="/pfss/mlde/workspaces/mlde_wsp_PI_Kersting/am84fuxo/data/datasets/PEGI-Guard-DS/age_rating/v2/test.json"
 EVAL_FILE="/pfss/mlde/workspaces/mlde_wsp_PI_Kersting/am84fuxo/LlavaGuard/pegiguard/evaluation/eval_rating.py"
 
@@ -49,12 +53,15 @@ for MODEL in "${MODELS[@]}"; do
   cleanup_old_vllm
 
   vllm serve "$MODEL" \
-    --served-model-name "$SERVED_MODEL_NAME" \
-    --tensor-parallel-size "$TP" \
-    --load-format auto \
-    --gpu-memory-utilization 0.80 \
-    --port "$PORT" \
-    >> "$LOG_FILE" 2>&1 &
+  --served-model-name "$SERVED_MODEL_NAME" \
+  --tensor-parallel-size "$TP" \
+  --load-format auto \
+  --gpu-memory-utilization 0.80 \
+  --trust-remote-code \
+  --port "$PORT" \
+  --max-model-len 8192 \
+  --enforce-eager \
+  >> "$LOG_FILE" 2>&1 &
 
   VLLM_PID=$!
 
