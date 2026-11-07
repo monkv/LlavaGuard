@@ -14,11 +14,11 @@ class MultiLabelMetrics:
         self.stats = defaultdict(lambda: {"tp": 0, "fp": 0, "fn": 0})
         self.per_label = {}
         self.n_samples = 0
-        self.rating_abs_age_error_sum = 0
-        self.rating_abs_level_error_sum = 0
-        self.rating_within_one_level = 0
-        self.rating_over = 0
-        self.rating_under = 0
+        #self.rating_abs_age_error_sum = 0
+        #self.rating_abs_level_error_sum = 0
+        #self.rating_within_one_level = 0
+        #self.rating_over = 0
+        #self.rating_under = 0
         self.invalid_true_ratings = []
 
     @staticmethod
@@ -55,8 +55,11 @@ class MultiLabelMetrics:
         """
         # micro
         tp_sum = sum(v["tp"] for v in self.stats.values())
+        print(f"tp_sum: {tp_sum}")
         fp_sum = sum(v["fp"] for v in self.stats.values())
+        print(f"fp_sum: {fp_sum}")
         fn_sum = sum(v["fn"] for v in self.stats.values())
+        print(f"fn_sum: {fn_sum}")
 
         micro_p = tp_sum / (tp_sum + fp_sum) if (tp_sum + fp_sum) else 0.0
         micro_r = tp_sum / (tp_sum + fn_sum) if (tp_sum + fn_sum) else 0.0

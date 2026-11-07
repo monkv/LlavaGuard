@@ -1,225 +1,199 @@
-import json
-import re
-import os
+"""Generate model responses or calculate metrics from saved responses."""
+
 import argparse
+import base64
+import io
+import json
+import os
+from pathlib import Path
+import re
 import sys
-sys.path.append('/pfss/mlde/workspaces/mlde_wsp_PI_Kersting/am84fuxo/LlavaGuard')
+import tempfile
 
-from openai import OpenAI
-from PIL import Image
-from typing import Dict, Any
+# Support running this file directly from outside the repository root.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from pegiguard.evaluation.metrics_calculator import EvaluationMetricsCalculator, validate_ground_truth
 
-from llavaguard_config import local_data_dir, local_models_dir
-from pegiguard.data.old.labeling import pil_to_data_url
-from pegiguard.evaluation.metrics_calculator import EvaluationMetricsCalculator
 
-def _sanitize_json_like(s: str) -> str:
-    # Remove trailing commas before } or ]
-    # e.g.  "Unsafe",\n}  ->  "Unsafe"\n}
-    s = re.sub(r',(\s*[}\]])', r'\1', s)
-    return s
+def _sanitize_json_like(text):
+    """Remove trailing commas outside quoted JSON strings."""
+    return re.sub(r'("(?:\\.|[^"\\])*"|,\s*(?=[}\]]))',
+                  lambda match: match.group(0) if match.group(0).startswith('"') else '', text)
 
-def extract_json(text: str):
-    """Extract JSON block from the given text and be forgiving about trailing commas."""
-    # 1) Try direct JSON
-    candidate = _sanitize_json_like(text)
+
+def extract_json(text):
+    """Extract a response object from JSON, a fenced block, or surrounding prose."""
+    if not isinstance(text, str):
+        raise ValueError("Expected model output to be text")
+    candidate = _sanitize_json_like(text.strip())
     try:
-        return json.loads(candidate)
+        result = json.loads(candidate)
     except json.JSONDecodeError:
-        pass
-
-    # 2) fenced ```json ... ``` block
-    fenced_pattern = r"```(?:json)?\s*(\{.*?\})\s*```"
-    m = re.search(fenced_pattern, text, flags=re.DOTALL)
-    if m:
-        json_str = _sanitize_json_like(m.group(1))
+        result = None
+    else:
+        if not isinstance(result, dict):
+            raise ValueError("Model response must be a JSON object")
+        return result
+    decoder = json.JSONDecoder()
+    for match in re.finditer(r"\{", candidate):
         try:
-            return json.loads(json_str)
+            result, _ = decoder.raw_decode(candidate, match.start())
         except json.JSONDecodeError:
-            print("Failed to parse fenced JSON block:")
-            print(json_str)
-            raise
-
-    # 3) first {...} substring
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1 and start < end:
-        json_str = _sanitize_json_like(text[start:end+1])
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError:
-            print("Failed to parse extracted JSON substring:")
-            print(json_str)
-            raise
-
-    print(f"****Problematic model response (no JSON found): {text}****")
-    raise ValueError("No JSON block found in the text.")
+            continue
+        if isinstance(result, dict):
+            return result
+    raise ValueError("No valid JSON object found in model output")
 
 
-def call_vllm(img_path: str, prompt: str, model, sample_id) -> Dict[str, Any]:
-    '''Docstring'''
+def call_vllm(img_path, prompt, model, sample_id):
+    """Request one prediction from the local vLLM server."""
+    # Saved-response evaluation does not need inference dependencies or a server.
+    from openai import OpenAI
+    from PIL import Image
+
+    with Image.open(img_path) as image:
+        buffer = io.BytesIO()
+        image.convert("RGB").save(buffer, format="JPEG")
+    data_url = "data:image/jpeg;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
     client = OpenAI(base_url="http://127.0.0.1:8000/v1", api_key="EMPTY")
-    # convert image to data url (for llama4)
-    image = Image.open(img_path).convert("RGB")
-    data_url = pil_to_data_url(image)
-
-    messages = [
-            {"role": "user", "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": data_url}},
-            ]},
-        ]
-    #print(f'****Prompt: {prompt}')
-    #emperature=0.7, top_p=0.80, top_k=20, min_p=0.0, presence_penalty=1.5, repetition_penalty=1.0
-    resp = client.chat.completions.create(
+    response = client.chat.completions.create(
         model=model,
-        messages=messages,
+        messages=[{"role": "user", "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": data_url}},
+        ]}],
         temperature=0.7,
         top_p=0.80,
         extra_body={
-            "top_k": 20,
-            "min_p": 0.0,
-            "presence_penalty": 1.5,
-            "repetition_penalty": 1.0,
-            "chat_template_kwargs": {
-                "enable_thinking": False
-            }
-        }
+            "top_k": 20, "min_p": 0.0, "presence_penalty": 1.5,
+            "repetition_penalty": 1.0, "chat_template_kwargs": {"enable_thinking": False},
+        },
     )
-    raw_respnose = (resp.choices[0].message.content or "").strip()
+    return extract_json(response.choices[0].message.content or "")
+
+
+def _write_json(path, payload):
+    """Replace a JSON file atomically after a successful write."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
     try:
-        response = extract_json(raw_respnose)
-    except Exception as e:
-        print("### Error in call_vllm while parsing model output ###")
-        print(f"Raw completion:\n{raw_respnose}")
-        print(f"Exception: {repr(e)}")
-        raise
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False) as handle:
+            temporary = handle.name
+            json.dump(payload, handle, ensure_ascii=False, indent=4)
+            handle.write("\n")
+        os.replace(temporary, path)
+    finally:
+        if temporary and os.path.exists(temporary):
+            os.unlink(temporary)
 
-    #print("****Model Response: ", response)
-    return response
 
+def evaluate_dataset(model_dir, mode, data_path, output_dir, responses_path, responses_only=False):
+    """Score one response per dataset ID and optionally generate missing responses.
 
-def evaluate_dataset(model_dir: str, mode: str, data_path: str, output_dir: str, responses_path: str):
-    """Evaluate the model on the given dataset."""
+    Invalid rating/assessment objects are retained and counted as invalid model
+    predictions. Null or non-object responses are incomplete and may be retried.
+    In responses-only mode the cache is never changed and inference is never called.
+    """
+    paths = [Path(path).resolve() for path in (data_path, output_dir, responses_path)]
+    if len(set(paths)) != len(paths):
+        raise ValueError("Dataset, metrics, and response paths must be different")
+    with open(data_path, encoding="utf-8") as handle:
+        data = json.load(handle)
+    if not isinstance(data, list):
+        raise ValueError("Dataset must be a list")
+    items = {}
+    ground_truths = {}
+    if mode not in {"age_rating", "safety"}:
+        raise ValueError(f"Unsupported evaluation mode: {mode!r}")
+    # Validate references before inference or any output writes.
+    for item in data:
+        if not isinstance(item, dict) or item.get("id") is None:
+            raise ValueError("Each dataset item must have an ID")
+        key = str(item["id"])
+        if key in items:
+            raise ValueError(f"Duplicate dataset ID: {key}")
+        ground_truths[key] = validate_ground_truth(mode, item["conversations"][1]["value"])
+        items[key] = item
 
-    with open(data_path, "r", encoding = "utf-8") as f:
-        data = json.load(f)
-
-    # stuff for saving model responses
-    os.makedirs(os.path.dirname(responses_path) or ".", exist_ok=True)
-    batch_size = 20
-
-    # metrics calculator initializing
-    emc = EvaluationMetricsCalculator()
-
-    # prepare data map and try to load any existing responses so we can skip them
-    total = len(data)
-    id_to_item = {item['id']: item for item in data}
-    buffer = []
-    existing_ids = set()
+    records = {}
     if os.path.exists(responses_path):
-        try:
-            with open(responses_path, "r", encoding="utf-8") as f:
-                existing = json.load(f)
-            if isinstance(existing, list):
-                buffer = existing
-                existing_ids = {it.get('id') for it in buffer if isinstance(it, dict) and 'id' in it}
-                print(f"Loaded {len(existing_ids)} existing responses from {responses_path}")
-                # feed existing responses into metrics calculator
-                for it in buffer:
-                    sid = it.get('id')
+        # A corrupt cache must not be silently overwritten by a new run.
+        with open(responses_path, encoding="utf-8") as handle:
+            existing = json.load(handle)
+        if not isinstance(existing, list):
+            raise ValueError("Saved responses must be a list")
+        for record in existing:
+            if not isinstance(record, dict) or record.get("id") is None:
+                raise ValueError("Each saved response must have an ID")
+            key = str(record["id"])
+            previous = records.get(key)
+            # Prefer the last object response; an incomplete duplicate cannot erase it.
+            if previous is None or isinstance(record.get("model_response"), dict) or not isinstance(previous.get("model_response"), dict):
+                records[key] = record
 
-                    resp = it.get('model_response')
-                    if sid in id_to_item and resp is not None:
-                        try:
-                            gt = id_to_item[sid]['conversations'][1]['value']
-                            emc.add_sample(mode, sid, resp, gt)
-                        except Exception as e:
-                            print(f"Warning adding existing sample {sid} to metrics: {e}")
-        except Exception as e:
-            print(f"Warning: couldn't load existing responses from {responses_path}: {e}")
-    
-    print('#' * 20 + 'Starting Evaluation' + '#' * 20)
-    for idx, eval_item in enumerate(data):
-        # load sample
-        sample_id = eval_item['id']
-        gt = eval_item['conversations'][1]["value"] #ground truth
-        prompt = eval_item['conversations'][0]["value"]
-        image_path = eval_item['image path']
+    calculator = EvaluationMetricsCalculator()
+    missing_ids = []
+    failed_ids = []
+    generated = 0
+    for key, item in items.items():
+        response = records.get(key, {}).get("model_response")
+        if not isinstance(response, dict):
+            if responses_only:
+                missing_ids.append(item["id"])
+                continue
+            try:
+                image_path = item.get("image path") or item.get("image_path") or item.get("image")
+                if not image_path:
+                    raise ValueError("Missing image path")
+                response = call_vllm(image_path, item["conversations"][0]["value"], model_dir, item["id"])
+                if not isinstance(response, dict):
+                    raise ValueError("Model response must be a JSON object")
+            except Exception as error:
+                print(f"Failed sample {item['id']}: {error}")
+                failed_ids.append(item["id"])
+                continue
+            records[key] = {"id": item["id"], "model_response": response}
+            generated += 1
+            if generated % 20 == 0:
+                _write_json(responses_path, list(records.values()))
+        calculator.add_sample(mode, item["id"], response, ground_truths[key])
 
-        # skip samples we've already generated responses for
-        if sample_id in existing_ids:
-            #print(f"Skipping sample id={sample_id} ({idx+1}/{total}) — already present in {responses_path}")
-            continue
-        #print(f'***Evaluating sample id: {sample_id}')
+    if not responses_only:
+        _write_json(responses_path, list(records.values()))
+    metrics = calculator.compute(mode)
+    metrics.update({
+        "dataset_samples": len(items),
+        "missing_response_ids": missing_ids,
+        "failed_response_ids": failed_ids,
+        "complete": not missing_ids and not failed_ids,
+    })
+    _write_json(output_dir, metrics)
+    print(f"Saved metrics to {output_dir}; generated {generated} responses; "
+          f"missing {len(missing_ids)}, failed {len(failed_ids)}")
+    return metrics
 
-        try:
-            resp = call_vllm(image_path, prompt, model_dir, sample_id)
-        except Exception as e:
-            import traceback
-            print("\n" + "#" * 60)
-            print(f"ERROR while processing sample index {idx}, id={sample_id}")
-            print(f"Image path: {image_path}")
-            print(f"Exception: {repr(e)}")
-            traceback.print_exc()
-            print("#" * 60 + "\n")
-            continue
 
-        # save model response to buffer/file?
-        buffer.append({
-            "id": sample_id,
-            "model_response": resp
-        })
+def main():
+    """Parse supported evaluation options and resolve default data paths."""
+    parser = argparse.ArgumentParser(description="PEGI-Guard evaluation")
+    parser.add_argument("--model_dir", default="OpenGVLab/InternVL3-1B-hf")
+    parser.add_argument("--data_path")
+    parser.add_argument("--output_dir", help="Output metrics JSON file")
+    parser.add_argument("--responses_path")
+    parser.add_argument("--label_mode", default="age_rating", choices=["age_rating", "safety"])
+    parser.add_argument("--responses_only", action="store_true", help="Score saved responses without calling a model")
+    args = parser.parse_args()
+    if not all((args.data_path, args.output_dir, args.responses_path)):
+        from llavaguard_config import local_data_dir
+        model_name = re.sub(r"[/:]", "_", args.model_dir)
+        result_dir = f"{local_data_dir}/evaluation/{args.label_mode}/base_models/{model_name}"
+        args.data_path = args.data_path or f"{local_data_dir}/datasets/PEGI-Guard-DS/{args.label_mode}/v2/test.json"
+        args.output_dir = args.output_dir or f"{result_dir}/test_results.json"
+        args.responses_path = args.responses_path or f"{result_dir}/responses.json"
+    evaluate_dataset(args.model_dir, args.label_mode, args.data_path, args.output_dir,
+                     args.responses_path, responses_only=args.responses_only)
 
-        if (idx % batch_size == 0):
-            with open(responses_path, "w", encoding="utf-8") as f:
-                json.dump(buffer, f, ensure_ascii=False, indent=4)
-            print(
-                f"[Checkpoint] Wrote {idx}/{total} to {responses_path}",
-                flush=True,
-            )
-        emc.add_sample(mode, sample_id, resp, gt)
-    
-    # saving model responses
-    with open(responses_path, "w", encoding="utf-8") as f:
-        json.dump(buffer, f, ensure_ascii=False, indent=4)
-        print(f'Saved model responses to {responses_path}')
-    
-    metric = emc.compute(mode)
-
-    print('#' * 20 + 'Evaluation Done' + '#' * 20)
-
-    os.makedirs(os.path.dirname(output_dir) or ".", exist_ok=True)
-    with open(output_dir, "w", encoding="utf-8") as f:
-        json.dump(metric, f, ensure_ascii=False, indent=4)
-
-    print(f'Saved evaluation results to {output_dir}')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='PEGI-Guard Evaluation')
-
-    parser.add_argument('--model_dir', type=str, default= None)
-    parser.add_argument('--data_path', type=str, default= None) #"Qwen/Qwen3.6-35B-A3B")
-    parser.add_argument('--output_dir', type=str, default=None) # where to save the evaluation stats
-    parser.add_argument('--responses_path', type=str, default=None) # where to save model responses
-    parser.add_argument('--engine', type=str, default='auto')
-    parser.add_argument('--batching', type=str, default='auto', choices=['auto', 'off', 'continues batching'])
-    parser.add_argument('--label_mode', default='age_rating', choices=['categories', 'age_rating', 'safety']) # use different test DSs
-
-    args = parser.parse_args()
-
-    label_mode = args.label_mode
-    
-    model_dir = args.model_dir if args.model_dir is not None else "OpenGVLab/InternVL3-1B-hf" 
-    
-    data_path = args.data_path if args.data_path is not None else f"{local_data_dir}/datasets/PEGI-Guard-DS/age_rating/v2/test.json" 
-    
-    output_dir = args.output_dir if args.output_dir is not None else f"{local_data_dir}/evaluation/age_rating/base_models/OpenGVLab_InternVL3-1B-hf/test_results.json"
-    
-    responses_path = args.responses_path if args.responses_path is not None else f"{local_data_dir}/evaluation/age_rating/base_models/OpenGVLab_InternVL3-1B-hf/responses.json"
-
-    print(f'*Evaluating model: {model_dir} on data: {data_path}*')
-    print(f'*Output directory: {output_dir}*')
-    print(f'Format is ------ {label_mode}***')
-
-    evaluate_dataset(model_dir=model_dir, mode=label_mode, data_path=data_path, output_dir=output_dir, responses_path=responses_path)
+    main()
